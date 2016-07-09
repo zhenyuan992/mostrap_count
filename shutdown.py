@@ -67,6 +67,10 @@ def takepicture():
     print('a picture was taken')
 
 def trygpio():
+    """
+    Pin input and output at raspberry pi
+    Most important pin is the pin 16 which feeds to arduino 
+    """
     GPIO.setup(20,GPIO.OUT)
     GPIO.setup(16,GPIO.IN) #input for shutdown, high to shutdown, low to continue
     GPIO.output(20,GPIO.LOW)
