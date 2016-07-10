@@ -60,7 +60,7 @@ def takepicture():
     print(i)
     print('starting camera')
     camera.start_preview()
-    sleep(3)
+    sleep(3) ##pauses for 3 seconds for camera to stablise
     camera.capture('/home/pi/Desktop/mostrap1pics/mos%s.jpg' % i)
     sleep(1)
     camera.stop_preview()
@@ -94,13 +94,14 @@ def trygpio():
 
 def main():
     """Main program.
+    This handles the uploading part, makes use of "upload()" function.
+    
     Parse command line, then iterate over files and directories under
     rootdir and upload all files.  Skips some temporary files and
     directories, and avoids duplicate uploads by comparing size and
     mtime with the server.
     """
-    
-    takepicture()
+
     args = parser.parse_args()
     if sum([bool(b) for b in (args.yes, args.no, args.default)]) > 1:
         print('At most one of --yes, --no, --default is allowed')
@@ -178,7 +179,7 @@ def main():
             else:
                 print('OK, skipping directory:', name)
         dirs[:] = keep
-    print('why am i still not shiuttoing don')
+    print('upload fully finished')
 
 
 def list_folder(dbx, folder, subfolder):
@@ -249,52 +250,9 @@ def upload(dbx, fullname, folder, subfolder, name, overwrite=False):
     return res
 
 def yesno(message, default, args):
-    """Handy helper function to ask a yes/no question.
-
-    Command line arguments --yes or --no force the answer;
-    --default to force the default answer.
-
-    Otherwise a blank line returns the default, and answering
-    y/yes or n/no returns True or False.
-
-    Retry on unrecognized answer.
-
-    Special answers:
-    - q or quit exits the program
-    - p or pdb invokes the debugger
-    """
     print(message + '? [auto] YES')
     return True
-    """
-    if args.default:
-        print(message + '? [auto]', 'Y' if default else 'N')
-        return default
-    if args.yes:
-        print(message + '? [auto] YES')
-        return True
-    if args.no:
-        print(message + '? [auto] NO')
-        return False
-    if default:
-        message += '? [Y/n] '
-    else:
-        message += '? [N/y] '
-    while True:
-        answer = input(message).strip().lower()
-        if not answer:
-            return default
-        if answer in ('y', 'yes'):
-            return True
-        if answer in ('n', 'no'):
-            return False
-        if answer in ('q', 'quit'):
-            print('Exit')
-            raise SystemExit(0)
-        if answer in ('p', 'pdb'):
-            import pdb
-            pdb.set_trace()
-        print('Please answer YES or NO.')
-    """
+
 def checkwifi():
     print('checking for wifi conenction')
     try:
@@ -331,6 +289,7 @@ if __name__ == '__main__':
                 print('still no wifi, rebooting')
                 GPIO.cleanup()
                 os.system('sudo reboot')
+        takepicture()
         main()
         trygpio()
     except:
