@@ -1,6 +1,15 @@
 """Upload the contents of your Downloads folder to Dropbox.
 
-This is an example app for API v2.
+Two main mode, debug mode and operation mode. 
+Debug mode will bypass tis program and allow pi to boot normally 
+Operation mode will do the following. 
+
+-Check for WiFi / connect to WiFi.  
+-Take picture and name it with the current time. 
+And save it locally. 
+
+-Upload/sync folder to Dropbox (or Rsync) 
+-Shutdown procedure 
 """
 from picamera import PiCamera
 from time import sleep
