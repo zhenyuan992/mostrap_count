@@ -1,4 +1,4 @@
-"""Upload the contents of your Downloads folder to Dropbox.
+"""works only on python 2
 
 Two main mode, debug mode and operation mode. 
 Debug mode will bypass tis program and allow pi to boot normally 
