@@ -1,15 +1,27 @@
 """works only on python 2
 
-Two main mode, debug mode and operation mode. 
-Debug mode will bypass tis program and allow pi to boot normally 
-Operation mode will do the following. 
+Two main mode, debug mode and operation mode.
+Debug mode will bypass tis program and allow pi to boot normally
+Operation mode will do the following.
 
--Check for WiFi / connect to WiFi.  
--Take picture and name it with the current time. 
-And save it locally. 
+-Check for WiFi / connect to WiFi.
+-Take picture and name it with the current time.
+And save it locally.
 
--Upload/sync folder to Dropbox (or Rsync) 
--Shutdown procedure 
+-Upload/sync folder to Dropbox (or Rsync)
+-Shutdown procedure
+
+functions present:
+setupgpio() #run once to setup the gpios
+checkmode() #run once to check for mode, operationmode = True or False
+takepicture()
+trygpio()
+checkwifi()
+mainsyncprogram() #the uploading/file sync sequence
+cutoffgpio() #run once within shutdown seq
+shutdownseq() #only happens in operationmode
+rebootseq() #only happens in operationmode
+
 """
 from picamera import PiCamera
 from time import sleep
@@ -30,18 +42,15 @@ import urllib2
 
 if sys.version.startswith('2'):
     input = raw_input
-
 import dropbox
 from dropbox.files import FileMetadata, FolderMetadata
 
 camera = PiCamera()
 camera.resolution = (2592,1994)##(64,64) ##
 camera.framerate = 5
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
+operationmode=False
 # OAuth2 access token.  TODO: login etc.
 TOKEN = 'SDyNJ4RmLfUAAAAAAAByX0pAIy__azpL2s0Zl7VjYlbcEeBxX0OnlfhOcM5W6V2k'
-
 parser = argparse.ArgumentParser(description='Sync /home/pi/Desktop/mostrap1pics to Dropbox')
 parser.add_argument('folder', nargs='?', default='mostraptry',
                     help='Folder name in your Dropbox')
@@ -62,7 +71,7 @@ def takepicture():
     and store it into the local file
     """
     global camera
-    
+
     fmt = '%Y-%m-%d-%H-%M-%S'
     print('obtaining time')
     i = datetime.datetime.now(pytz.timezone('Asia/Singapore')).strftime(fmt)
@@ -75,36 +84,33 @@ def takepicture():
     camera.stop_preview()
     print('a picture was taken')
 
+def setupgpio():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+    GPIO.setup(20,GPIO.OUT)
+    GPIO.setup(21,GPIO.OUT)
+    GPIO.output(21,GPIO.LOW) #tells arduino to not reset the power
+    GPIO.setup(16,GPIO.IN) #input for shutdown, high to operation (will shutdown), low to debug
+
+def checkmode():
+    global operationmode
+    operationmode = GPIO.input(16) #detects the input of 16
+
 def trygpio():
     """
     Pin input and output at raspberry pi
-    Most important pin is the pin 16 which feeds to arduino 
+    Most important pin is the pin 16 which feeds to arduino
     """
-    GPIO.setup(20,GPIO.OUT)
-    GPIO.setup(16,GPIO.IN) #input for shutdown, high to shutdown, low to continue
     GPIO.output(20,GPIO.LOW)
     if GPIO.input(16):
-        GPIO.output(21,GPIO.HIGH)
-        sleep(7) #wait 10seconds then shutdown
-        GPIO.output(21,GPIO.LOW)
-        GPIO.cleanup()
-        print('suhtting down nowwww')
-        os.system('sudo shutdown now -h')
     else:
         GPIO.cleanup()
         print('im not shutting down')
-    """
-    for x in range (0,5):
-        GPIO.output(21,GPIO.HIGH)
-        sleep(0.5)
-        GPIO.output(21,GPIO.LOW)
-        sleep(0.5)
-    """
 
-def main():
+def mainsyncprogram():
     """Main program.
     This handles the uploading part, makes use of "upload()" function.
-    
+
     Parse command line, then iterate over files and directories under
     rootdir and upload all files.  Skips some temporary files and
     directories, and avoids duplicate uploads by comparing size and
@@ -271,7 +277,20 @@ def checkwifi():
     except urllib2.URLError as err: pass
     print('there is no wifi')
     return False
-    
+
+def rebootseq():
+    GPIO.cleanup()
+    print('GPIO has been cleaned, pi is rebooting nowwww')
+    os.system('sudo reboot')
+
+def shutdownseq():
+    GPIO.output(21,GPIO.HIGH)
+    sleep(7) #wait 10seconds then shutdown
+    GPIO.output(21,GPIO.LOW)
+    GPIO.cleanup()
+    print('GPIO has been cleaned, pi is shutting down nowwww')
+    os.system('sudo shutdown now -h')
+
 @contextlib.contextmanager
 def stopwatch(message):
     """Context manager to print how long a block of code took."""
@@ -283,28 +302,39 @@ def stopwatch(message):
         print('Total elapsed time for %s: %.3f' % (message, t1 - t0))
 
 if __name__ == '__main__':
-    print('starting program')
-    try:
-        GPIO.setup(21,GPIO.OUT)
-        GPIO.output(21,GPIO.LOW)
-        if checkwifi():
-            print('wifi is good')
-        else:
-            print('waiting for 5 sec then try again')
-            sleep(5)
+    print('starting mostrap program')
+    setupgpio()
+    checkmode()
+    operationcomplete = False
+    if operationmode:
+        try:
             if checkwifi():
                 print('wifi is good')
-            elif GPIO.input(16)==HIGH:
-                print('still no wifi, rebooting')
-                GPIO.cleanup()
-                os.system('sudo reboot')
-        takepicture()
-        main()
-        trygpio()
-    except:
-        print('soemthing went wrong')
+            else:
+                print('waiting for 5 sec then try again')
+                sleep(5)
+                if checkwifi():
+                    print('wifi is good')
+                elif operationmode:
+                    print('still no wifi, rebooting')
+                    rebootseq()
+            takepicture()
+            mainsyncprogram()
+            operationcomplete = True
+        except:
+            print('something went wrong rebooting in 2 seconds')
+            sleep(2)
+            rebootseq()
+        finally:
+            if operationcomplete:
+                shutdownseq() #only happens when no exceptions is detected
+            else:
+                print('exceptions not caught, please debug if you see this')
+                rebootseq() #exceptions did not do its job
+
+    else:
+        print('closing mostrap program and continuing with normal boot')
     #with shutdown
     #process to shutdown the raspi
         #pin high
         #shutdown
-    
