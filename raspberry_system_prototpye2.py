@@ -96,16 +96,6 @@ def checkmode():
     global operationmode
     operationmode = GPIO.input(16) #detects the input of 16
 
-def trygpio():
-    """
-    Pin input and output at raspberry pi
-    Most important pin is the pin 16 which feeds to arduino
-    """
-    GPIO.output(20,GPIO.LOW)
-    if GPIO.input(16):
-    else:
-        GPIO.cleanup()
-        print('im not shutting down')
 
 def mainsyncprogram():
     """Main program.
@@ -333,6 +323,7 @@ if __name__ == '__main__':
                 rebootseq() #exceptions did not do its job
 
     else:
+        print('entering debug mode')
         print('closing mostrap program and continuing with normal boot')
     #with shutdown
     #process to shutdown the raspi
