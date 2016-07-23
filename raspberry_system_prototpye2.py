@@ -259,6 +259,20 @@ def yesno(message, default, args):
     return True
 
 def checkwifi():
+    for counter in range(1,8):
+        if connectwifi():
+            print('wifi is good')
+            break
+        elif operationmode and counter>6:
+            print('still no wifi, rebooting')
+            rebootseq()
+        else:
+            print('no WiFi, waiting for 10 sec then try again')
+            print("try number:")
+            print(counter) 
+            sleep(10)
+
+def connectwifi():
     print('checking for wifi conenction')
     try:
         hehehe=urllib2.urlopen('http://www.google.com',timeout=1)
@@ -293,21 +307,17 @@ def stopwatch(message):
 
 if __name__ == '__main__':
     print('starting mostrap program')
-    setupgpio()
-    checkmode()
+    try:
+        print(' setting up gpio') 
+        setupgpio()
+        checkmode()
+    except:
+        operationmode = False
+        print(' something went wrong at gpio, defaulted to debug mode ') 
     operationcomplete = False
     if operationmode:
         try:
-            if checkwifi():
-                print('wifi is good')
-            else:
-                print('waiting for 5 sec then try again')
-                sleep(5)
-                if checkwifi():
-                    print('wifi is good')
-                elif operationmode:
-                    print('still no wifi, rebooting')
-                    rebootseq()
+            checkwifi()
             takepicture()
             mainsyncprogram()
             operationcomplete = True
