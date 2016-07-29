@@ -4,6 +4,8 @@ Two main mode, debug mode and operation mode.
 Debug mode will bypass tis program and allow pi to boot normally
 Operation mode will do the following.
 
+ requires stable wifi for the system to be reliable
+
 -Check for WiFi / connect to WiFi.
 -Take picture and name it with the current time.
 And save it locally.
@@ -269,7 +271,7 @@ def checkwifi():
         else:
             print('no WiFi, waiting for 10 sec then try again')
             print("try number:")
-            print(counter) 
+            print(counter)
             sleep(10)
 
 def connectwifi():
@@ -308,12 +310,12 @@ def stopwatch(message):
 if __name__ == '__main__':
     print('starting mostrap program')
     try:
-        print(' setting up gpio') 
+        print(' setting up gpio')
         setupgpio()
         checkmode()
     except:
         operationmode = False
-        print(' something went wrong at gpio, defaulted to debug mode ') 
+        print(' something went wrong at gpio, defaulted to debug mode ')
     operationcomplete = False
     if operationmode:
         try:
