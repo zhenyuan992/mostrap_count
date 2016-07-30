@@ -73,7 +73,7 @@ def takepicture():
     and store it into the local file
     """
     global camera
-
+    GPIO.output(20,GPIO.HIGH) #turning on the lights
     fmt = '%Y-%m-%d-%H-%M-%S'
     print('obtaining time')
     i = datetime.datetime.now(pytz.timezone('Asia/Singapore')).strftime(fmt)
@@ -84,6 +84,7 @@ def takepicture():
     camera.capture('/home/pi/Desktop/mostrap1pics/mos%s.jpg' % i)
     sleep(1)
     camera.stop_preview()
+    GPIO.output(20,GPIO.LOW)
     print('a picture was taken')
 
 def setupgpio():
