@@ -20,12 +20,6 @@ def readfiletolines():
     texts_from_file = textf.readlines()
     textf.close()
 
-
-#def #add new item at the end
-def addnewitem():
-    global texts_from_file
-    texts_from_file.append()
-
 def textValueAdding(value): #value = -1 for rebootadding,-2 for upload
     global texts_from_file
     tobeedited=texts_from_file.pop()
@@ -102,8 +96,8 @@ if finallyy:
         #write to file
         if uploaded:
             textValueAdding(-2)
-        #shutdownseq
         writetofile()
+        #shutdownseq
         print 'sys is shutting down'
     else:
         #times_of_reboot++, write to file

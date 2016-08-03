@@ -50,7 +50,12 @@ camera.resolution = (2592,1994)##(64,64) ##
 camera.framerate = 5
 operationmode=False #mode variables
 hasWifi=False #wifi variables
-
+datafile_path = '\home\pi\Desktop\mostrap1pics\datafile.txt'
+texts_from_file=[]
+newpicture = False
+name_of_picture=' '
+uploaded = False
+rebooting = True
 # OAuth2 access token.  TODO: login etc.
 TOKEN = 'SDyNJ4RmLfUAAAAAAAByX0pAIy__azpL2s0Zl7VjYlbcEeBxX0OnlfhOcM5W6V2k'
 parser = argparse.ArgumentParser(description='Sync /home/pi/Desktop/mostrap1pics to Dropbox')
@@ -67,8 +72,10 @@ parser.add_argument('--no', '-n', action='store_true',
                     help='Answer no to all questions')
 parser.add_argument('--default', '-d', action='store_true',
                     help='Take default answer on all questions')
-
-def takepicture(int j):
+# **************************************************************************************
+#DEF FUNCITONS *************************************************************************
+# **************************************************************************************
+def takepicture(value):
     """
     if have wifi,take picture name it with the date and time
     else name it the number.
@@ -76,21 +83,30 @@ def takepicture(int j):
     and finally store it into the local file
     """
     global camera
-
+    global hasWifi
+    global name_of_picture
     fmt = '%Y-%m-%d-%H-%M-%S'
     print('obtaining time')
+    j=str(value)
     i = datetime.datetime.now(pytz.timezone('Asia/Singapore')).strftime(fmt)
     print(i)
+    GPIO.output(20,GPIO.HIGH)
+    sleep(0.5)
     print('starting camera')
     camera.start_preview()
     sleep(3) ##pauses for 3 seconds for camera to stablise
     if hasWifi:
         camera.capture('/home/pi/Desktop/mostrap1pics/mos%s.jpg' % i)
+        name_of_picture="mos"+str(i)+".jpg"
     else:
         camera.capture('/home/pi/Desktop/mostrap1pics/mos%s.jpg' % j)
+        name_of_picture="mos"+str(j)+".jpg"
     sleep(1)
     camera.stop_preview()
+    sleep(0.5)
+    GPIO.output(20,GPIO.LOW)
     print('a picture was taken')
+    return True
 
 def setupgpio():
     GPIO.setmode(GPIO.BCM)
@@ -192,8 +208,8 @@ def mainsyncprogram():
             else:
                 print('OK, skipping directory:', name)
         dirs[:] = keep
-    print('upload fully finished')
-
+    print('upload fully finished and sucessful')
+    return True
 
 def list_folder(dbx, folder, subfolder):
     """List a folder.
@@ -237,7 +253,6 @@ def download(dbx, folder, subfolder, name):
 
 def upload(dbx, fullname, folder, subfolder, name, overwrite=False):
     """Upload a file.
-
     Return the request response, or None in case of error.
     """
     path = '/%s/%s/%s' % (folder, subfolder.replace(os.path.sep, '/'), name)
@@ -293,17 +308,43 @@ def connectwifi():
     return False
 
 def rebootseq():
+    camera.close()
     GPIO.cleanup()
     print('GPIO has been cleaned, pi is rebooting nowwww')
     os.system('sudo reboot')
 
 def shutdownseq():
+    camera.close()
     GPIO.output(21,GPIO.HIGH)
     sleep(7) #wait 10seconds then shutdown
     GPIO.output(21,GPIO.LOW)
     GPIO.cleanup()
     print('GPIO has been cleaned, pi is shutting down nowwww')
     os.system('sudo shutdown now -h')
+
+def readfiletolines():
+    textf=open(datafile_path,'r')
+    global texts_from_file
+    texts_from_file = textf.readlines()
+    textf.close()
+
+def textValueAdding(value): #value = -1 for rebootadding,-2 for upload
+    global texts_from_file
+    tobeedited=texts_from_file.pop()
+    tobeedited=tobeedited.split('|')
+    tobeedited[value]=" "+str(int(tobeedited[value])+1)+" "
+    tobeedited = "|".join(tobeedited)
+    texts_from_file.append(tobeedited)
+
+def textAddLine(index,name,uploaded):
+    global texts_from_file
+    tobeadded="\n"+str(index)+" | "+name+" | "+str(uploaded)+" | 0 "
+    texts_from_file.append(tobeadded)
+    
+def writetofile():
+    global texts_from_file
+    textf=open(datafile_path,'w')
+    textf.writelines(texts_from_file)
 
 @contextlib.contextmanager
 def stopwatch(message):
@@ -314,6 +355,9 @@ def stopwatch(message):
     finally:
         t1 = time.time()
         print('Total elapsed time for %s: %.3f' % (message, t1 - t0))
+# **************************************************************************************
+#DEFINING FINISHED *********************************************************************
+# **************************************************************************************
 
 if __name__ == '__main__':
     print('starting mostrap program')
@@ -324,28 +368,65 @@ if __name__ == '__main__':
     except:
         operationmode = False
         print(' something went wrong at gpio, defaulted to debug mode ')
+        
     operationcomplete = False
+    operationmode=False ###remove this
     if operationmode:
         try:
-            checkwifi()
-            takepicture()
-            mainsyncprogram()
+            readfiletolines()
+            iteminalist=texts_from_file[-1] #reads the last item
+            value_from_last_item=iteminalist.split('|')
+            index_last_item = int(value_from_last_item[0])
+            name_last_item = str(value_from_last_item[1])
+            last_item_uploaded = int(value_from_last_item[2])
+            times_of_reboot = int(value_from_last_item[3])
+            checkwifi() #haswifi will be set inside here
+            if last_item_uploaded:
+                print 'last item uploaded, proceed with'
+                newpicture=takepicture(index_last_item+1)
+                #takepicture(with index_last_item++) = newpicture
+                textAddLine(index_last_item+1,name_of_picture,0)
+            elif times_of_reboot > 5:
+                print 'rebooted too many times, take new picture'
+                newpicture=takepicture(index_last_item+1)
+                #take picture (with index_last_item++) = newpicture
+                textAddLine(index_last_item+1,name_of_picture,0)
+            elif not hasWifi:
+                print ' system has to reboot'
+                rebooting = True
+
+            if hasWifi:
+                uploaded = mainsyncprogram()
+                rebooting = not uploaded # upload fail, then it will try to reboot
+            if (times_of_reboot > 5): # no matter what, if it reboots 5 times, its time to shutdown
+                rebooting = False
             operationcomplete = True
         except:
-            print('something went wrong rebooting in 2 seconds')
+            print('something went wrong in the main try')
             sleep(2)
-            rebootseq()
+            #rebootseq()
         finally:
             if operationcomplete:
-                shutdownseq() #only happens when no exceptions is detected
+                #only happens when no exceptions is detected
+                if uploaded or (not rebooting):
+                    #write to file
+                    if uploaded:
+                        textValueAdding(-2)
+                    writetofile()
+                    shutdownseq()
+                    print 'sys is shutting down'
+                else:
+                    #times_of_reboot++, write to file
+                    textValueAdding(-1)
+                    writetofile()
+                    rebootseq()
+                    print 'rebooting seq for real'
             else:
                 print('exceptions not caught, please debug if you see this')
                 rebootseq() #exceptions did not do its job
 
-    else:
+    else: ##entering into debug mode
         print('entering debug mode')
+        camera.close()
         print('closing mostrap program and continuing with normal boot')
-    #with shutdown
-    #process to shutdown the raspi
-        #pin high
-        #shutdown
+
