@@ -283,16 +283,16 @@ def yesno(message, default, args):
 
 def checkwifi(): #will change the value of hasWifi
     global hasWifi
-    for counter in range(1,8):
+    for counter in range(1,18):
         if connectwifi():
             print('wifi is good, setting has wifi to True')
             hasWifi=True
             break
-        elif operationmode and counter>6:
+        elif operationmode and counter>13:
             print('still no wifi, setting hasWifi to false')
             hasWifi=False
         else:
-            print('no WiFi, waiting for 10 sec then try again')
+            print('no WiFi, waiting for 10 sec then try again, max 2 mins')
             print("try number:")
             print(counter)
             sleep(10)
