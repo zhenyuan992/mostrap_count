@@ -3,7 +3,7 @@ print 'ho'
 # index | filename | bool uploaded | int reboot
 # 1 | hahah.jpg | 1 | 3
 #list_of_lines[0] #this is the first line
-datafile_path = 'C:\Users\User\Desktop\datafile.txt'
+datafile_path = '/home/pi/Desktop/mostrap1pics/datafile'
 folder_in_pi= ' ' #for uploading to
 folder_in_dropbox = ' ' #for uploading from
 texts_from_file=[]

@@ -50,7 +50,7 @@ camera.resolution = (2592,1994)##(64,64) ##
 camera.framerate = 5
 operationmode=False #mode variables
 hasWifi=False #wifi variables
-datafile_path = '\home\pi\Desktop\mostrap1pics\datafile.txt'
+datafile_path = '/home/pi/Desktop/mostrap1pics/datafile'
 texts_from_file=[]
 newpicture = False
 name_of_picture=' '
@@ -331,14 +331,14 @@ def readfiletolines():
 def textValueAdding(value): #value = -1 for rebootadding,-2 for upload
     global texts_from_file
     tobeedited=texts_from_file.pop()
-    tobeedited=tobeedited.split('|')
+    tobeedited=tobeedited.split(',')
     tobeedited[value]=" "+str(int(tobeedited[value])+1)+" "
-    tobeedited = "|".join(tobeedited)
+    tobeedited = ",".join(tobeedited)
     texts_from_file.append(tobeedited)
 
 def textAddLine(index,name,uploaded):
     global texts_from_file
-    tobeadded="\n"+str(index)+" | "+name+" | "+str(uploaded)+" | 0 "
+    tobeadded="\n"+str(index)+" , "+name+" , "+str(uploaded)+" , 0 "
     texts_from_file.append(tobeadded)
     
 def writetofile():
@@ -370,12 +370,11 @@ if __name__ == '__main__':
         print(' something went wrong at gpio, defaulted to debug mode ')
         
     operationcomplete = False
-    operationmode=False ###remove this
     if operationmode:
         try:
             readfiletolines()
             iteminalist=texts_from_file[-1] #reads the last item
-            value_from_last_item=iteminalist.split('|')
+            value_from_last_item=iteminalist.split(',')
             index_last_item = int(value_from_last_item[0])
             name_last_item = str(value_from_last_item[1])
             last_item_uploaded = int(value_from_last_item[2])
@@ -403,6 +402,7 @@ if __name__ == '__main__':
             operationcomplete = True
         except:
             print('something went wrong in the main try')
+            print(sys.exc_info()[0])
             sleep(2)
             #rebootseq()
         finally:
