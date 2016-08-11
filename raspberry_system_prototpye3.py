@@ -85,7 +85,7 @@ def takepicture(value):
     global camera
     global hasWifi
     global name_of_picture
-    fmt = '%Y-%m-%d-%H-%M-%S'
+    fmt = '%m-%d-%H-%M-%S'
     print('obtaining time')
     j=str(value)
     i = datetime.datetime.now(pytz.timezone('Asia/Singapore')).strftime(fmt)
@@ -97,7 +97,7 @@ def takepicture(value):
     sleep(3) ##pauses for 3 seconds for camera to stablise
     if hasWifi:
         camera.capture('/home/pi/Desktop/mostrap1pics/mos%s.jpg' % i)
-        name_of_picture="mos"+str(i)+".jpg"
+        name_of_picture="mos"+str(j)+"mos"+str(i)+".jpg"
     else:
         camera.capture('/home/pi/Desktop/mostrap1pics/mos%s.jpg' % j)
         name_of_picture="mos"+str(j)+".jpg"
@@ -291,6 +291,7 @@ def checkwifi(): #will change the value of hasWifi
         elif operationmode and counter>13:
             print('still no wifi, setting hasWifi to false')
             hasWifi=False
+            break
         else:
             print('no WiFi, waiting for 10 sec then try again, max 2 mins')
             print("try number:")
@@ -300,7 +301,7 @@ def checkwifi(): #will change the value of hasWifi
 def connectwifi():
     print('checking for wifi conenction')
     try:
-        hehehe=urllib2.urlopen('http://www.google.com',timeout=1)
+        hehehe=urllib2.urlopen('https://www.google.com',timeout=1)
         print('there is wifi')
         return True
     except urllib2.URLError as err: pass
